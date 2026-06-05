@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drone Swarm Management</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>Drone Swarm Management System</h1>
+
+    <section>
+        <h2>Create Drone</h2>
+
+        <input id="droneName" placeholder="Drone name">
+        <input id="droneType" placeholder="Drone type">
+        <input id="droneSerial" placeholder="Serial number">
+
+        <button onclick="createDrone()">Create Drone</button>
+        <button onclick="loadDrones()">Load Drones</button>
+    </section>
+    
+<section>
+    <h2>Dashboard</h2>
+<div class="dashboard-cards">
+    <div class="dashboard-card">
+        <span>Total Drones</span>
+        <strong id="totalDrones">0</strong>
+    </div>
+
+    <div class="dashboard-card online-card">
+        <span>Online</span>
+        <strong id="onlineDrones">0</strong>
+    </div>
+
+    <div class="dashboard-card offline-card">
+        <span>Offline</span>
+        <strong id="offlineDrones">0</strong>
+    </div>
+
+    <div class="dashboard-card">
+        <span>Swarms</span>
+        <strong id="totalSwarms">0</strong>
+    </div>
+</div>
+    <button onclick="loadDashboard()">Refresh Dashboard</button>
+</section>
+
+<section>
+    <h2>Send Heartbeat</h2>
+
+    <input id="heartbeatDroneId" placeholder="Drone ID">
+    <input id="heartbeatBattery" placeholder="Battery">
+<select id="heartbeatStatus">
+    <option value="idle">Idle</option>
+    <option value="flying">Flying</option>
+    <option value="charging">Charging</option>
+    <option value="mission">Mission</option>
+    <option value="maintenance">Maintenance</option>
+</select>
+
+    <button onclick="sendHeartbeat()">Send Heartbeat</button>
+</section>
+
+    <section>
+        <h2>Drones</h2>
+
+        <table>
+            <thead>
+                <tr>
+                   <th>ID</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Serial Number</th>
+                    <th>Health</th>
+                    <th>Status</th>
+                    <th>Battery</th>
+                    <th>Action</th>
+
+
+                </tr>
+            </thead>
+
+            <tbody id="droneTable">
+
+            </tbody>
+        </table>
+    </section>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
+
+<section>
+    <h2>Create Swarm</h2>
+
+    <input id="swarmName" placeholder="Swarm name">
+    <input id="swarmMission" placeholder="Mission">
+
+    <button onclick="createSwarm()">Create Swarm</button>
+    <button onclick="loadSwarms()">Load Swarms</button>
+</section>
+
+<section>
+    <h2>Swarms</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Mission</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+
+        <tbody id="swarmTable"></tbody>
+    </table>
+</section>
+
+<section>
+    <h2>Swarm Members</h2>
+
+    <input id="memberSwarmId" placeholder="Swarm ID">
+    <input id="memberDroneId" placeholder="Drone ID">
+
+    <button onclick="addDroneToSwarm()">Add Drone To Swarm</button>
+    <button onclick="removeDroneFromSwarm()">Remove Drone From Swarm</button>
+
+    <h3 id="selectedSwarmTitle">No swarm selected</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Drone ID</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Serial Number</th>
+            </tr>
+        </thead>
+
+        <tbody id="membersTable"></tbody>
+    </table>
+</section>
+</body>
+</html>

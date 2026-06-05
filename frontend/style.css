@@ -1,0 +1,138 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0 auto;
+    max-width: 1400px;
+    padding: 40px;
+    background: #f5f7fb;
+}
+
+h1 {
+    margin-bottom: 30px;
+    font-size: 34px;
+    font-weight: 700;
+}
+
+h2 {
+    margin-top: 0;
+    margin-bottom: 18px;
+    font-size: 22px;
+}
+
+section {
+    background: #ffffff;
+    padding: 24px;
+    margin-bottom: 25px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+}
+
+input,
+select {
+    padding: 11px 13px;
+    margin: 5px;
+    width: 190px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    outline: none;
+    background: white;
+}
+
+input:focus,
+select:focus {
+    border-color: #2563eb;
+}
+
+button {
+    padding: 11px 16px;
+    margin: 5px;
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    background: #2563eb;
+    color: white;
+    font-weight: 600;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+
+table {
+    width: 100%;
+    background: white;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 15px;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+th,
+td {
+    padding: 14px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+}
+
+th {
+    background: #f1f5f9;
+    font-weight: 700;
+}
+
+tr:hover td {
+    background: #f9fafb;
+}
+
+td button {
+    background: #111827;
+}
+
+td button:hover {
+    background: #374151;
+}
+
+td button:last-child {
+    background: #dc2626;
+}
+
+td button:last-child:hover {
+    background: #b91c1c;
+}
+
+.dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.dashboard-card {
+    background: #f8fafc;
+    padding: 18px;
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
+}
+
+.dashboard-card span {
+    display: block;
+    color: #6b7280;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.dashboard-card strong {
+    font-size: 30px;
+    color: #111827;
+}
+
+.online-card {
+    border-left: 5px solid #16a34a;
+}
+
+.offline-card {
+    border-left: 5px solid #dc2626;
+}
