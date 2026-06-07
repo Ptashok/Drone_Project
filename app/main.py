@@ -468,3 +468,366 @@ def delete_swarm(swarm_id: int):
     return {
         "message": "Swarm deleted successfully"
     }
+
+@app.put("/swarms/{swarm_id}/leader/{drone_id}")
+def set_swarm_leader(swarm_id: int, drone_id: int):
+    db = SessionLocal()
+
+    member = db.execute(
+        text("""
+            SELECT *
+            FROM swarm_members
+            WHERE swarm_id = :swarm_id
+            AND drone_id = :drone_id
+        """),
+        {
+            "swarm_id": swarm_id,
+            "drone_id": drone_id
+        }
+    ).fetchone()
+
+    if not member:
+        db.close()
+        return {"error": "Drone is not a member of this swarm"}
+
+    db.execute(
+        text("""
+            UPDATE swarms
+            SET leader_drone_id = :drone_id
+            WHERE id = :swarm_id
+        """),
+        {
+            "drone_id": drone_id,
+            "swarm_id": swarm_id
+        }
+    )
+
+    db.commit()
+    db.close()
+
+    return {
+        "message": "Swarm leader updated",
+        "swarm_id": swarm_id,
+        "leader_drone_id": drone_id
+    }
+
+@app.post("/swarms/{swarm_id}/elect-leader")
+def elect_swarm_leader(swarm_id: int):
+    db = SessionLocal()
+
+    leader = db.execute(
+        text("""
+            SELECT d.id, d.name, h.battery, h.timestamp
+            FROM swarm_members sm
+            JOIN drones d ON sm.drone_id = d.id
+            JOIN heartbeats h ON h.drone_id = d.id
+            WHERE sm.swarm_id = :swarm_id
+            AND h.timestamp = (
+                SELECT MAX(h2.timestamp)
+                FROM heartbeats h2
+                WHERE h2.drone_id = d.id
+            )
+            ORDER BY h.battery DESC, h.timestamp DESC
+            LIMIT 1
+        """),
+        {"swarm_id": swarm_id}
+    ).fetchone()
+
+    if not leader:
+        db.close()
+        return {"error": "No drone with heartbeat data found"}
+
+    db.execute(
+        text("""
+            UPDATE swarms
+            SET leader_drone_id = :leader_id
+            WHERE id = :swarm_id
+        """),
+        {
+            "leader_id": leader.id,
+            "swarm_id": swarm_id
+        }
+    )
+
+    db.commit()
+    db.close()
+
+    return {
+        "message": "Leader elected",
+        "leader_id": leader.id,
+        "leader_name": leader.name,
+        "battery": leader.battery
+    }
+
+@app.get("/swarms/{swarm_id}/leader-status")
+def get_leader_status(swarm_id: int):
+    db = SessionLocal()
+
+    swarm = db.execute(
+        text("""
+            SELECT leader_drone_id
+            FROM swarms
+            WHERE id = :swarm_id
+        """),
+        {"swarm_id": swarm_id}
+    ).fetchone()
+
+    if not swarm:
+        db.close()
+        return {"error": "Swarm not found"}
+
+    if not swarm.leader_drone_id:
+        db.close()
+        return {"error": "Leader is not assigned"}
+
+    heartbeat = db.execute(
+        text("""
+            SELECT *
+            FROM heartbeats
+            WHERE drone_id = :drone_id
+            ORDER BY timestamp DESC
+            LIMIT 1
+        """),
+        {"drone_id": swarm.leader_drone_id}
+    ).fetchone()
+
+    if not heartbeat:
+        db.close()
+        return {
+            "leader_drone_id": swarm.leader_drone_id,
+            "health": "unknown",
+            "message": "Leader has no heartbeat data"
+        }
+
+    from datetime import datetime
+
+    now = datetime.now()
+    diff = now - heartbeat.timestamp
+
+    if diff.total_seconds() > 300:
+        health = "offline"
+    else:
+        health = "online"
+
+    db.close()
+
+    return {
+        "leader_drone_id": swarm.leader_drone_id,
+        "health": health,
+        "battery": heartbeat.battery,
+        "status": heartbeat.status,
+        "last_heartbeat": heartbeat.timestamp
+    }
+
+@app.post("/swarms/{swarm_id}/replace-leader")
+def replace_swarm_leader(swarm_id: int):
+    db = SessionLocal()
+
+    swarm = db.execute(
+        text("""
+            SELECT leader_drone_id
+            FROM swarms
+            WHERE id = :swarm_id
+        """),
+        {"swarm_id": swarm_id}
+    ).fetchone()
+
+    if not swarm:
+        db.close()
+        return {"error": "Swarm not found"}
+
+    if not swarm.leader_drone_id:
+        db.close()
+        return {"error": "Leader is not assigned"}
+
+    old_leader = db.execute(
+        text("""
+            SELECT *
+            FROM heartbeats
+            WHERE drone_id = :leader_id
+            ORDER BY timestamp DESC
+            LIMIT 1
+        """),
+        {"leader_id": swarm.leader_drone_id}
+    ).fetchone()
+
+    leader_problem = False
+
+    if not old_leader:
+        leader_problem = True
+    else:
+        now = datetime.now()
+        diff = now - old_leader.timestamp
+
+        if diff.total_seconds() > 300 or old_leader.battery < 30:
+            leader_problem = True
+
+    if not leader_problem:
+        db.close()
+        return {
+            "message": "Current leader is stable",
+            "leader_drone_id": swarm.leader_drone_id
+        }
+
+    new_leader = db.execute(
+        text("""
+            SELECT d.id, d.name, h.battery, h.status, h.timestamp
+            FROM swarm_members sm
+            JOIN drones d ON sm.drone_id = d.id
+            JOIN heartbeats h ON h.drone_id = d.id
+            WHERE sm.swarm_id = :swarm_id
+            AND d.id != :old_leader_id
+            AND h.timestamp = (
+                SELECT MAX(h2.timestamp)
+                FROM heartbeats h2
+                WHERE h2.drone_id = d.id
+            )
+            AND h.battery >= 30
+            ORDER BY h.battery DESC, h.timestamp DESC
+            LIMIT 1
+        """),
+        {
+            "swarm_id": swarm_id,
+            "old_leader_id": swarm.leader_drone_id
+        }
+    ).fetchone()
+
+    if not new_leader:
+        db.close()
+        return {"error": "No suitable replacement leader found"}
+
+    db.execute(
+        text("""
+            UPDATE swarms
+            SET leader_drone_id = :new_leader_id
+            WHERE id = :swarm_id
+        """),
+        {
+            "new_leader_id": new_leader.id,
+            "swarm_id": swarm_id
+        }
+    )
+
+    db.commit()
+    db.close()
+
+    return {
+        "message": "Leader replaced successfully",
+        "old_leader_id": swarm.leader_drone_id,
+        "new_leader_id": new_leader.id,
+        "new_leader_name": new_leader.name,
+        "battery": new_leader.battery,
+        "status": new_leader.status
+    }
+
+@app.get("/swarms/{swarm_id}/health")
+def get_swarm_health(swarm_id: int):
+    db = SessionLocal()
+
+    swarm = db.execute(
+        text("""
+            SELECT *
+            FROM swarms
+            WHERE id = :swarm_id
+        """),
+        {"swarm_id": swarm_id}
+    ).fetchone()
+
+    if not swarm:
+        db.close()
+        return {"error": "Swarm not found"}
+
+    members = db.execute(
+        text("""
+            SELECT d.id, d.name, h.battery, h.status, h.timestamp
+            FROM swarm_members sm
+            JOIN drones d ON sm.drone_id = d.id
+            LEFT JOIN heartbeats h ON h.id = (
+                SELECT h2.id
+                FROM heartbeats h2
+                WHERE h2.drone_id = d.id
+                ORDER BY h2.timestamp DESC
+                LIMIT 1
+            )
+            WHERE sm.swarm_id = :swarm_id
+        """),
+        {"swarm_id": swarm_id}
+    ).fetchall()
+
+    total = len(members)
+    online = 0
+    offline = 0
+    batteries = []
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    for drone in members:
+        if drone.timestamp is None:
+            offline += 1
+        else:
+            diff = now - drone.timestamp
+
+            if diff.total_seconds() > 300:
+                offline += 1
+            else:
+                online += 1
+
+        if drone.battery is not None:
+            batteries.append(drone.battery)
+
+    average_battery = 0
+
+    if batteries:
+        average_battery = round(sum(batteries) / len(batteries), 2)
+
+    leader_status = "not assigned"
+
+    if swarm.leader_drone_id:
+        leader_heartbeat = db.execute(
+            text("""
+                SELECT *
+                FROM heartbeats
+                WHERE drone_id = :leader_id
+                ORDER BY timestamp DESC
+                LIMIT 1
+            """),
+            {"leader_id": swarm.leader_drone_id}
+        ).fetchone()
+
+        if not leader_heartbeat:
+            leader_status = "unknown"
+        else:
+            diff = now - leader_heartbeat.timestamp
+
+            if diff.total_seconds() > 300:
+                leader_status = "offline"
+            else:
+                leader_status = "online"
+
+    if total == 0:
+        swarm_status = "empty"
+    elif leader_status != "online":
+        swarm_status = "critical"
+    elif offline > online:
+        swarm_status = "critical"
+    elif average_battery < 30:
+        swarm_status = "critical"
+    elif offline > 0:
+        swarm_status = "warning"
+    elif average_battery < 50:
+        swarm_status = "warning"
+    else:
+        swarm_status = "stable"
+
+    db.close()
+
+    return {
+        "swarm_id": swarm_id,
+        "members": total,
+        "online": online,
+        "offline": offline,
+        "average_battery": average_battery,
+        "leader_drone_id": swarm.leader_drone_id,
+        "leader_status": leader_status,
+        "swarm_status": swarm_status
+    }

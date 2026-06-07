@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swarm Management</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Swarm Management</h1>
+
+<nav class="navbar">
+    <a href="index.html">Monitoring</a>
+    <a href="swarms.html">Swarm Management</a>
+</nav>
+
+<section>
+    <h2>Create Swarm</h2>
+
+    <input id="swarmName" placeholder="Swarm name">
+    <input id="swarmMission" placeholder="Mission">
+
+    <button onclick="createSwarm()">Create Swarm</button>
+    <button onclick="loadSwarms()">Load Swarms</button>
+</section>
+
+<section>
+    <h2>Swarms</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Mission</th>
+                <th>Leader</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+
+        <tbody id="swarmTable"></tbody>
+    </table>
+</section>
+
+<section>
+    <h2>Swarm Members</h2>
+
+    <input id="memberSwarmId" placeholder="Swarm ID">
+    <input id="memberDroneId" placeholder="Drone ID">
+
+    <button onclick="addDroneToSwarm()">Add Drone To Swarm</button>
+    <button onclick="removeDroneFromSwarm()">Remove Drone From Swarm</button>
+
+    <h3 id="selectedSwarmTitle">No swarm selected</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Drone ID</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Serial Number</th>
+            </tr>
+        </thead>
+
+        <tbody id="membersTable"></tbody>
+    </table>
+</section>
+
+<section>
+    <h2>Swarm Health</h2>
+
+    <input id="healthSwarmId" placeholder="Swarm ID">
+
+    <button onclick="checkSwarmHealth()">Check Swarm Health</button>
+
+    <div id="swarmHealthResult"></div>
+</section>
+
+<section>
+    <h2>Swarm Leader</h2>
+
+    <input id="leaderSwarmId" placeholder="Swarm ID">
+    <input id="leaderDroneId" placeholder="Drone ID">
+
+    <button onclick="setSwarmLeader()">Set Leader</button>
+    <button onclick="electSwarmLeader()">Auto Elect Leader</button>
+    <button onclick="checkLeaderStatus()">Check Leader Status</button>
+    <button onclick="replaceSwarmLeader()">Replace Leader If Needed</button>
+
+    <div id="leaderResult"></div>
+</section>
+
+<script src="script.js"></script>
+
+</body>
+</html>

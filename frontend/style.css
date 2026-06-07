@@ -136,3 +136,26 @@ td button:last-child:hover {
 .offline-card {
     border-left: 5px solid #dc2626;
 }
+
+.navbar {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
+    background: white;
+    padding: 15px 20px;
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.navbar a {
+    text-decoration: none;
+    background: #2563eb;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.navbar a:hover {
+    background: #1d4ed8;
+}

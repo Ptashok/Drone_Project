@@ -147,6 +147,7 @@ async function loadSwarms() {
                 <td>${swarm.id}</td>
                 <td>${swarm.name}</td>
                 <td>${swarm.mission}</td>
+                <td>${swarm.leader_drone_id || "-"}</td>
                 <td>
                     <button onclick="viewSwarmMembers(${swarm.id}, '${swarm.name}')">
                         View Members
@@ -280,3 +281,235 @@ async function loadDashboard() {
 }
 loadDashboard();
 
+async function findDroneById() {
+    const drone_id = Number(document.getElementById("searchDroneId").value);
+
+    if (!drone_id) {
+        alert("Please enter Drone ID");
+        return;
+    }
+
+    const response = await fetch(`http://127.0.0.1:8000/drones/${drone_id}`);
+    const drone = await response.json();
+
+    const result = document.getElementById("foundDroneResult");
+
+    if (drone.error) {
+        result.innerHTML = `
+            <p style="color: red; font-weight: bold;">
+                Drone not found
+            </p>
+        `;
+        return;
+    }
+
+    result.innerHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Serial Number</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>${drone.id}</td>
+                    <td>${drone.name}</td>
+                    <td>${drone.drone_type}</td>
+                    <td>${drone.serial_number}</td>
+                </tr>
+            </tbody>
+        </table>
+    `;
+}
+
+async function setSwarmLeader() {
+
+    const swarmId =
+        document.getElementById("leaderSwarmId").value;
+
+    const droneId =
+        document.getElementById("leaderDroneId").value;
+
+    if (!swarmId || !droneId) {
+        alert("Enter Swarm ID and Drone ID");
+        return;
+    }
+
+    const response = await fetch(
+        `http://127.0.0.1:8000/swarms/${swarmId}/leader/${droneId}`,
+        {
+            method: "PUT"
+        }
+    );
+
+    const data = await response.json();
+
+    const result =
+        document.getElementById("leaderResult");
+
+    if (data.error) {
+
+        result.innerHTML =
+            `<p style="color:red;">
+                ${data.error}
+            </p>`;
+
+        return;
+    }
+
+    result.innerHTML = `
+        <p style="color:green;">
+            Leader assigned successfully
+        </p>
+
+        <p>
+            Swarm ID: ${data.swarm_id}
+        </p>
+
+        <p>
+            Leader Drone ID: ${data.leader_drone_id}
+        </p>
+    `;
+}
+
+async function electSwarmLeader() {
+    const swarmId = document.getElementById("healthSwarmId").value;
+
+    if (!swarmId) {
+        alert("Enter Swarm ID");
+        return;
+    }
+
+    const response = await fetch(
+        `http://127.0.0.1:8000/swarms/${swarmId}/elect-leader`,
+        {
+            method: "POST"
+        }
+    );
+
+    const data = await response.json();
+    const result = document.getElementById("swarmHealthResult");
+
+    if (data.error) {
+        result.innerHTML = `<p style="color:red;">${data.error}</p>`;
+        return;
+    }
+
+    result.innerHTML = `
+        <p style="color:green;">Leader elected successfully</p>
+        <p>Leader ID: ${data.leader_id}</p>
+        <p>Leader Name: ${data.leader_name}</p>
+        <p>Battery: ${data.battery}%</p>
+    `;
+
+    loadSwarms();
+}
+
+async function checkLeaderStatus() {
+    const swarmId = document.getElementById("leaderSwarmId").value;
+
+    if (!swarmId) {
+        alert("Enter Swarm ID");
+        return;
+    }
+
+    const response = await fetch(
+        `http://127.0.0.1:8000/swarms/${swarmId}/leader-status`
+    );
+
+    const data = await response.json();
+    const result = document.getElementById("leaderResult");
+
+    if (data.error) {
+        result.innerHTML = `<p style="color:red;">${data.error}</p>`;
+        return;
+    }
+
+    result.innerHTML = `
+        <p><b>Leader ID:</b> ${data.leader_drone_id}</p>
+        <p><b>Health:</b> ${data.health}</p>
+        <p><b>Battery:</b> ${data.battery ?? "-"}</p>
+        <p><b>Status:</b> ${data.status ?? "-"}</p>
+    `;
+}
+
+async function replaceSwarmLeader() {
+    const swarmId = document.getElementById("leaderSwarmId").value;
+
+    if (!swarmId) {
+        alert("Enter Swarm ID");
+        return;
+    }
+
+    const response = await fetch(
+        `http://127.0.0.1:8000/swarms/${swarmId}/replace-leader`,
+        {
+            method: "POST"
+        }
+    );
+
+    const data = await response.json();
+    const result = document.getElementById("leaderResult");
+
+    if (data.error) {
+        result.innerHTML = `<p style="color:red;">${data.error}</p>`;
+        return;
+    }
+
+    result.innerHTML = `
+        <p style="color:green;"><b>${data.message}</b></p>
+        <p><b>Old Leader:</b> ${data.old_leader_id ?? "-"}</p>
+        <p><b>New Leader:</b> ${data.new_leader_id ?? data.leader_drone_id}</p>
+        <p><b>Name:</b> ${data.new_leader_name ?? "-"}</p>
+        <p><b>Battery:</b> ${data.battery ?? "-"}%</p>
+        <p><b>Status:</b> ${data.status ?? "-"}</p>
+    `;
+
+    loadSwarms();
+}
+async function checkSwarmHealth() {
+    const swarmId = document.getElementById("healthSwarmId").value;
+
+    if (!swarmId) {
+        alert("Enter Swarm ID");
+        return;
+    }
+
+    const response = await fetch(
+        `http://127.0.0.1:8000/swarms/${swarmId}/health`
+    );
+
+    const data = await response.json();
+    const result = document.getElementById("swarmHealthResult");
+
+    if (data.error) {
+        result.innerHTML = `<p style="color:red;">${data.error}</p>`;
+        return;
+    }
+
+    let color = "green";
+
+    if (data.swarm_status === "warning") {
+        color = "orange";
+    }
+
+    if (data.swarm_status === "critical") {
+        color = "red";
+    }
+
+    result.innerHTML = `
+        <p style="color:${color}; font-weight:bold;">
+            Swarm Status: ${data.swarm_status.toUpperCase()}
+        </p>
+        <p><b>Swarm ID:</b> ${data.swarm_id}</p>
+        <p><b>Members:</b> ${data.members}</p>
+        <p><b>Online:</b> ${data.online}</p>
+        <p><b>Offline:</b> ${data.offline}</p>
+        <p><b>Average Battery:</b> ${data.average_battery}%</p>
+        <p><b>Leader:</b> ${data.leader_drone_id ?? "-"}</p>
+        <p><b>Leader Status:</b> ${data.leader_status}</p>
+    `;
+}
